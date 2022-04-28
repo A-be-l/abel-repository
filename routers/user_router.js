@@ -1,0 +1,209 @@
+/*
+ * @Author: your name
+ * @Date: 2022-04-26 15:02:10
+ * @LastEditTime: 2022-04-27 20:38:29
+ * @LastEditors: Please set LastEditors
+ * @Description: 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%A
+ * @FilePath: \xz\routers\user_router.js
+ */
+//引入express模块
+const express=require('express');
+//创建user_router路由器
+const user_router=express.Router();
+// 引如连接池pool
+const pool=require('../pool');
+//用户查询接口（get/list）
+//请求url:http://127.0.0.1:8080/v1/users/list
+//请求方法:get
+user_router.get('/list',(req,res,next)=>{
+    //SQL语句查新
+    pool.query('select * from xz_user',(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows!=0){
+            console.log("用户查询成功");
+            res.send({code:200,msg:'用户查询成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户查询失败');
+            res.send('用户查询失败');
+        }
+    })
+})
+//用户查询接口（get/getByNmae）
+//请求url:http://127.0.0.1:8080/v1/users/getByNmae
+//请求方法:get
+user_router.get('/getByNmae',(req,res,next)=>{
+    console.log(req.query);
+    //SQL语句查新
+    pool.query('select * from xz_user where uname=?',[req.query.uname],(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        console.log(result.length);
+        //判断查询是否执行成功,响应信息
+        if(result.length>0){
+            console.log("用户名存在");
+            res.send({code:200,msg:'用户已被占用，请重新输入',data:result});
+            console.log(result);
+        }else{
+            console.log('用户不存在');
+            res.send('用户名合法');
+        }
+    })
+})
+//用户分页查询接口（get/paging）
+//请求url:http://127.0.0.1:8080/v1/users/paging
+//请求方法:get
+user_router.get('/paging',(req,res,next)=>{
+    //SQL语句
+    pool.query('select * from xz_user limit ?,?',[Number(req.query.start),Number(req.query.count)],(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows!=0){
+            console.log("用户分页查询成功");
+            res.send({code:200,msg:'用户分页查询成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户分页查询失败');
+            res.send('用户分页查询失败');
+        }
+    })
+})
+//用户注册接口（post/register）
+//请求url:http://127.0.0.1:8080/v1/users/register
+//请求方法:post
+user_router.post('/register',(req,res,next)=>{
+    console.log(req.body);
+    if(!/^1[3-9]\d{9}$/.test(Number(req.body.phone))){
+        res.send('手机号格式错误');
+        return;
+    }
+    pool.query('insert into xz_user set ?',[req.body],(err,result)=>{
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows===1){
+            console.log("用户注册成功");
+            res.send({code:200,msg:'用户注册成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户注册失败');
+            res.send('用户注册失败');
+        }
+    })
+})
+//用户删除接口（delete/del_user）
+//请求url:http://127.0.0.1:8080/v1/users/del_user
+//请求方法:delete
+user_router.delete('/del_user',(req,res,next)=>{
+    pool.query('delete from xz_user where uid=?',[Number(req.body.id)],(err,result)=>{
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows===1){
+            console.log("用户删除成功");
+            res.send({code:200,msg:'用户删除成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户删除失败');
+            res.send('用户删除失败');
+        }
+    })
+})
+//用户登录接口（post/login）
+//请求url:http://127.0.0.1:8080/v1/users/login
+//请求方法:post
+user_router.post('/login',(req,res,next)=>{
+    console.log(req.body);
+    //SQL语句查新
+    pool.query('select * from xz_user where uname=? and upwd=?',[req.body.uname,req.body.upwd],(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        //用户名不能为空
+        if(!req.body.uname){
+            res.send({code:401,msg:'用户名不能为空'});
+            return;
+        }
+        //密码不能为空
+        if(!req.body.uname){
+            res.send({code:402,msg:'密码不能为空'});
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.length!=0){
+            console.log("用户登录成功");
+            res.send({code:200,msg:'用户登录成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户登录失败');
+            res.send('用户登录失败');
+        }
+    })
+})
+//用户修改接口（put/update_user)
+//请求url:http://127.0.0.1:8080/v1/users/update_user
+//请求方法:put
+user_router.put('/update_user',(req,res,next)=>{
+    console.log(req.body);
+    //SQL语句查新
+    pool.query('update  xz_user set ? where uid=?',[req.body,req.body.uid],(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows!=0){
+            console.log("用户修改成功");
+            res.send({code:200,msg:'用户修改成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户修改失败');
+            res.send('用户修改失败');
+        }
+    })
+})
+//用户密码修改m接口（put/update_user_pwd)
+//请求url:http://127.0.0.1:8080/v1/users/update_user_pwd
+//请求方法:put
+user_router.put('/update_user_pwd',(req,res,next)=>{
+    console.log(req.body);
+    //SQL语句查新
+    pool.query('update  xz_user set upwd=? where uname=? and upwd=?',[req.body.new_upwd,req.body.uname,req.body.old_upwd],(err,result)=>{
+        //判断SQL查询，数据库连接是否有错误
+        if(err){
+            next();
+            return;
+        }
+        //判断查询是否执行成功,响应信息
+        if(result.affectedRows!=0){
+            console.log("用户密码修改成功");
+            res.send({code:200,msg:'用户密码修改成功',data:result});
+            console.log(result);
+        }else{
+            console.log('用户密码修改失败');
+            res.send('用户密码修改失败');
+        }
+    })
+})
+
+//暴露user_router
+module.exports=user_router;
